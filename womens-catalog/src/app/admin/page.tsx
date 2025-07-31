@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from '@/utils/supabaseClient';
+import Image from "next/image";
 
 interface Product {
   id: string;
@@ -168,23 +169,33 @@ export default function AdminPage() {
 
   if (!authenticated) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-white font-sans px-4 py-8">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-cream font-sans px-4 py-8">
+        <div className="text-center mb-8">
+          <Image
+            src="/ROPERO_DE_LAU_mid.jpg"
+            alt="El Ropero De Lau"
+            width={200}
+            height={80}
+            className="mx-auto h-16 w-auto object-contain mb-4"
+          />
+          <h1 className="text-2xl font-bold text-primary">Panel de Administración</h1>
+        </div>
         <form
           onSubmit={handleLogin}
-          className="w-full max-w-xs bg-gray-50 rounded-lg shadow p-6"
+          className="w-full max-w-xs bg-white rounded-lg shadow-lg p-6 border border-neutral-200"
         >
-          <h1 className="text-2xl font-bold mb-4 text-gray-900 text-center">Admin Login</h1>
+          <h2 className="text-xl font-bold mb-4 text-primary text-center">Admin Login</h2>
           <input
             type="password"
-            className="w-full mb-3 px-3 py-2 border rounded focus:outline-none focus:ring"
+            className="w-full mb-3 px-3 py-2 border border-neutral-300 rounded focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
             placeholder="Enter admin password"
             value={password}
             onChange={e => setPassword(e.target.value)}
           />
-          {error && <div className="text-red-500 mb-2 text-sm">{error}</div>}
+          {error && <div className="text-error mb-2 text-sm">{error}</div>}
           <button
             type="submit"
-            className="w-full bg-pink-600 text-white py-2 rounded font-semibold hover:bg-pink-700 transition"
+            className="w-full bg-accent hover:bg-accent-dark text-white py-2 rounded font-semibold transition-colors"
           >
             Login
           </button>
@@ -194,39 +205,49 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-white font-sans px-4 py-8">
+    <div className="min-h-screen flex flex-col items-center bg-cream font-sans px-4 py-8">
       <div className="w-full max-w-3xl flex justify-end mb-4">
         <button
           onClick={handleLogout}
-          className="bg-gray-300 text-gray-700 px-4 py-2 rounded font-semibold hover:bg-gray-400 transition"
+          className="bg-neutral-200 hover:bg-neutral-300 text-neutral-700 px-4 py-2 rounded font-semibold transition-colors"
         >
           Logout
         </button>
       </div>
-      <h1 className="text-3xl font-bold mb-6 text-gray-900">Admin Dashboard</h1>
+      <div className="text-center mb-6">
+        <Image
+          src="/ROPERO_DE_LAU_mid.jpg"
+          alt="El Ropero De Lau"
+          width={200}
+          height={80}
+          className="mx-auto h-16 w-auto object-contain mb-4"
+        />
+        <h1 className="text-3xl font-bold mb-2 text-primary">Admin Dashboard</h1>
+        <p className="text-secondary">Gestiona los productos de El Ropero De Lau</p>
+      </div>
       <form
         onSubmit={editId === null ? handleAdd : handleUpdate}
-        className="w-full max-w-md bg-gray-50 rounded-lg shadow p-6 mb-8"
+        className="w-full max-w-md bg-white rounded-lg shadow-lg p-6 mb-8 border border-neutral-200"
       >
-        <h2 className="text-xl font-semibold mb-4 text-gray-800">
+        <h2 className="text-xl font-semibold mb-4 text-primary">
           {editId === null ? "Add New Product" : "Edit Product"}
         </h2>
         <input
-          className="w-full mb-3 px-3 py-2 border rounded focus:outline-none focus:ring"
+          className="w-full mb-3 px-3 py-2 border border-neutral-300 rounded focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
           name="name"
           placeholder="Product Name"
           value={form.name}
           onChange={handleChange}
         />
         <input
-          className="w-full mb-3 px-3 py-2 border rounded focus:outline-none focus:ring"
+          className="w-full mb-3 px-3 py-2 border border-neutral-300 rounded focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
           name="size"
           placeholder="Size (e.g. S, M, L, XL)"
           value={form.size}
           onChange={handleChange}
         />
         <input
-          className="w-full mb-4 px-3 py-2 border rounded focus:outline-none focus:ring"
+          className="w-full mb-4 px-3 py-2 border border-neutral-300 rounded focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
           name="price"
           placeholder="Price (e.g. $49.99)"
           value={form.price}
@@ -235,7 +256,7 @@ export default function AdminPage() {
         <div className="mb-3">
           <label
             htmlFor="file-upload"
-            className="cursor-pointer inline-block bg-pink-600 text-white px-4 py-2 rounded font-semibold hover:bg-pink-700 transition"
+            className="cursor-pointer inline-block bg-accent hover:bg-accent-dark text-white px-4 py-2 rounded font-semibold transition-colors"
           >
             {uploading ? "Uploading..." : "Upload Images"}
           </label>
@@ -257,7 +278,7 @@ export default function AdminPage() {
                   {editId !== null && (
                     <button
                       type="button"
-                      className="absolute top-0 right-0 bg-red-600 text-white rounded-full p-1 text-xs opacity-80 hover:opacity-100 group-hover:opacity-100"
+                      className="absolute top-0 right-0 bg-error text-white rounded-full p-1 text-xs opacity-80 hover:opacity-100 group-hover:opacity-100"
                       onClick={() => handleDeleteImage(idx)}
                       style={{ transform: 'translate(40%,-40%)' }}
                     >
@@ -268,11 +289,11 @@ export default function AdminPage() {
               ))}
             </div>
           )}
-          {uploadError && <div className="text-red-500 mt-2 text-sm">{uploadError}</div>}
+          {uploadError && <div className="text-error mt-2 text-sm">{uploadError}</div>}
         </div>
         <button
           type="submit"
-          className="w-full bg-pink-600 text-white py-2 rounded font-semibold hover:bg-pink-700 transition"
+          className="w-full bg-accent hover:bg-accent-dark text-white py-2 rounded font-semibold transition-colors"
           disabled={loading || uploading}
         >
           {editId === null ? (loading ? "Adding..." : "Add Product") : (loading ? "Updating..." : "Update Product")}
@@ -280,7 +301,7 @@ export default function AdminPage() {
         {editId !== null && (
           <button
             type="button"
-            className="w-full mt-2 bg-gray-300 text-gray-700 py-2 rounded font-semibold hover:bg-gray-400 transition"
+            className="w-full mt-2 bg-neutral-200 hover:bg-neutral-300 text-neutral-700 py-2 rounded font-semibold transition-colors"
             onClick={() => {
               setEditId(null);
               setForm({ name: "", price: "$", size: "", images: [] });
@@ -292,26 +313,26 @@ export default function AdminPage() {
           </button>
         )}
       </form>
-      {error && <div className="text-red-500 mb-4 text-sm">{error}</div>}
+      {error && <div className="text-error mb-4 text-sm">{error}</div>}
       <div className="w-full max-w-3xl">
         {loading ? (
-          <div className="text-center py-8 text-gray-500">Loading...</div>
+          <div className="text-center py-8 text-neutral-500">Loading...</div>
         ) : (
-          <table className="w-full table-auto border-collapse">
+          <table className="w-full table-auto border-collapse bg-white rounded-lg shadow-lg overflow-hidden">
             <thead>
-              <tr className="bg-gray-100">
-                <th className="p-2 text-left">Image</th>
-                <th className="p-2 text-left">Name</th>
-                <th className="p-2 text-left">Size</th>
-                <th className="p-2 text-left">Price</th>
-                <th className="p-2 text-left">Actions</th>
+              <tr className="bg-neutral-100">
+                <th className="p-2 text-left text-primary">Image</th>
+                <th className="p-2 text-left text-primary">Name</th>
+                <th className="p-2 text-left text-primary">Size</th>
+                <th className="p-2 text-left text-primary">Price</th>
+                <th className="p-2 text-left text-primary">Actions</th>
               </tr>
             </thead>
             <tbody>
               {products.map((product) => {
                 const images = product.images ?? [];
                 return (
-                  <tr key={product.id} className="border-b">
+                  <tr key={product.id} className="border-b border-neutral-200 hover:bg-neutral-50">
                     <td className="p-2">
                       <img
                         src={images[0]}
@@ -319,19 +340,19 @@ export default function AdminPage() {
                         className="w-16 h-16 object-cover rounded"
                       />
                     </td>
-                    <td className="p-2">{product.name}</td>
-                    <td className="p-2">{product.size}</td>
-                    <td className="p-2">{product.price.startsWith("$") ? product.price : "$" + product.price}</td>
+                    <td className="p-2 text-primary">{product.name}</td>
+                    <td className="p-2 text-secondary">{product.size}</td>
+                    <td className="p-2 text-accent font-semibold">{product.price.startsWith("$") ? product.price : "$" + product.price}</td>
                     <td className="p-2 flex gap-2">
                       <button
-                        className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 text-sm"
+                        className="bg-accent hover:bg-accent-dark text-white px-3 py-1 rounded text-sm transition-colors"
                         onClick={() => handleEdit(product)}
                         disabled={loading || uploading}
                       >
                         Edit
                       </button>
                       <button
-                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm"
+                        className="bg-error hover:bg-error/80 text-white px-3 py-1 rounded text-sm transition-colors"
                         onClick={() => handleDelete(product.id)}
                         disabled={loading || uploading}
                       >
