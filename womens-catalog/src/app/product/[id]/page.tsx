@@ -190,7 +190,7 @@ export default function ProductDetails() {
           <div className="flex items-center justify-between h-16">
             {/* Logo Text */}
             <Link href="/" className="flex items-center">
-              <h1 className="text-xl font-bold text-primary">Bienvenidos al ropero de Lau</h1>
+              <span className="sr-only">El Ropero De Lau</span>
             </Link>
 
             {/* Navigation */}
@@ -198,7 +198,7 @@ export default function ProductDetails() {
               <Link href="/" className="text-primary hover:text-accent font-medium text-sm uppercase tracking-wide transition-colors">
                 Inicio
               </Link>
-              <Link href="/sobre-nosotros" className="text-primary hover:text-accent font-medium text-sm uppercase tracking-wide transition-colors">
+              <Link href="/#about" className="text-primary hover:text-accent font-medium text-sm uppercase tracking-wide transition-colors">
                 Sobre Nosotros
               </Link>
               <Link href="#" className="text-primary hover:text-accent font-medium text-sm uppercase tracking-wide transition-colors">
@@ -234,17 +234,21 @@ export default function ProductDetails() {
                   <div className="absolute bottom-2 left-0 right-0 flex justify-between px-2 z-10">
                     <button
                       type="button"
-                      className="bg-white/90 rounded-full px-2 py-1 text-neutral-700 hover:bg-accent hover:text-white transition-colors"
+                      className="bg-white/90 rounded-full p-1 text-neutral-700 hover:bg-accent hover:text-white transition-colors"
                       onClick={() => setCurrentImg(currentImg > 0 ? currentImg - 1 : images.length - 1)}
                     >
-                      &#8592;
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                      </svg>
                     </button>
                     <button
                       type="button"
-                      className="bg-white/90 rounded-full px-2 py-1 text-neutral-700 hover:bg-accent hover:text-white transition-colors"
+                      className="bg-white/90 rounded-full p-1 text-neutral-700 hover:bg-accent hover:text-white transition-colors"
                       onClick={() => setCurrentImg(currentImg < images.length - 1 ? currentImg + 1 : 0)}
                     >
-                      &#8594;
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
                     </button>
                   </div>
                 )}
@@ -254,18 +258,27 @@ export default function ProductDetails() {
           {images.length > 1 && (
             <div className="flex gap-2 mb-4">
               {images.map((img, idx) => (
-                <img
-                  key={idx}
-                  src={img}
-                  alt={`Thumbnail ${idx + 1}`}
-                  className={`w-16 h-16 object-cover rounded cursor-pointer border-2 ${currentImg === idx ? 'border-accent' : 'border-transparent'}`}
-                  onClick={() => setCurrentImg(idx)}
-                />
+                <button key={idx} type="button" onClick={() => setCurrentImg(idx)} className={`border-2 ${currentImg === idx ? 'border-accent' : 'border-transparent'} rounded` }>
+                  <Image
+                    src={img}
+                    alt={`Thumbnail ${idx + 1}`}
+                    width={64}
+                    height={64}
+                    className="w-16 h-16 object-cover rounded"
+                  />
+                </button>
               ))}
             </div>
           )}
           <h1 className="text-3xl font-bold text-primary mb-2">{product.name}</h1>
-          <span className="text-accent font-bold text-2xl mb-4">{product.price}</span>
+          <span className="text-primary font-semibold text-2xl mb-4">
+            {(() => {
+              const priceNumber = Number((product.price || "").replace(/[^0-9.,-]/g, '').replace(/\./g, '').replace(/,/g, '.'));
+              return isNaN(priceNumber)
+                ? product.price
+                : new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(priceNumber);
+            })()}
+          </span>
           {formattedDate && <div className="text-neutral-400 text-sm mb-4">Agregado: {formattedDate}</div>}
           <Link href="/" className="mt-4 text-accent underline">Volver al catálogo</Link>
           {/* AI Outfit Suggestion Section */}
@@ -294,7 +307,7 @@ export default function ProductDetails() {
                 } else {
                   setAiError(data.error || "No se pudo obtener la sugerencia");
                 }
-              } catch (err) {
+              } catch {
                 setAiError("No se pudo obtener la sugerencia");
               } finally {
                 setAiLoading(false);

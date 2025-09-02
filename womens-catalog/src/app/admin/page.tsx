@@ -126,7 +126,7 @@ export default function AdminPage() {
       setProducts(products);
     } else {
       setError("Failed to add product: " + error.message);
-      console.log('Supabase insert error:', error);
+      console.error('Supabase insert error:', error);
     }
   };
 
@@ -155,7 +155,7 @@ export default function AdminPage() {
       setProducts(products);
     } else {
       setError("Failed to update product: " + error.message);
-      console.log('Supabase update error:', error);
+      console.error('Supabase update error:', error);
     }
   };
 
@@ -274,7 +274,7 @@ export default function AdminPage() {
             <div className="flex flex-wrap gap-2 mt-2">
               {form.images.map((img, idx) => (
                 <div key={idx} className="relative group">
-                  <img src={img} alt={`Preview ${idx + 1}`} className="w-20 h-20 object-cover rounded" />
+                  <Image src={img} alt={`Preview ${idx + 1}`} width={80} height={80} className="w-20 h-20 object-cover rounded" />
                   {editId !== null && (
                     <button
                       type="button"
@@ -334,9 +334,11 @@ export default function AdminPage() {
                 return (
                   <tr key={product.id} className="border-b border-neutral-200 hover:bg-neutral-50">
                     <td className="p-2">
-                      <img
+                      <Image
                         src={images[0]}
                         alt={product.name}
+                        width={64}
+                        height={64}
                         className="w-16 h-16 object-cover rounded"
                       />
                     </td>

@@ -62,21 +62,23 @@ export default function Home() {
     <div className="min-h-screen bg-cream font-sans flex flex-col">
       {/* Header */}
       <header className="bg-white border-b border-neutral-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            {/* Logo Text */}
-            <Link href="/" className="flex items-center">
-              <h1 className="text-xl font-bold text-primary">Bienvenidos al ropero de Lau</h1>
-            </Link>
+            {/* Tagline in header (left-aligned, first item) */}
+            <span className="hidden md:block flex-1 text-left text-primary text-sm whitespace-nowrap">
+              <span className="font-bold text-base md:text-lg">Bienvenidos al ropero de Lau</span>
+              {" — "}
+              <span className="italic">Prendas con estilo, historia y nuevas oportunidades.</span>
+            </span>
 
             {/* Navigation */}
-            <nav className="hidden md:flex items-center space-x-8">
+            <nav className="hidden md:flex items-center space-x-8 ml-auto">
               <Link href="/" className="text-primary hover:text-accent font-medium text-sm uppercase tracking-wide transition-colors">
                 Inicio
               </Link>
-                                    <Link href="/sobre-nosotros" className="text-primary hover:text-accent font-medium text-sm uppercase tracking-wide transition-colors">
-                        Sobre Nosotros
-                      </Link>
+              <Link href="/#about" className="text-primary hover:text-accent font-medium text-sm uppercase tracking-wide transition-colors">
+                Sobre Nosotros
+              </Link>
               <Link href="#" className="text-primary hover:text-accent font-medium text-sm uppercase tracking-wide transition-colors">
                 Carrito (0)
               </Link>
@@ -94,60 +96,105 @@ export default function Home() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center px-4 py-8">
-                        <div className="text-center mb-10">
-                  <p className="text-lg text-secondary font-light italic">Prendas con estilo, historia y nuevas oportunidades.</p>
-                </div>
+        <section className="w-full max-w-5xl mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold text-primary mb-2">Catálogo</h1>
+        </section>
         
         {loading ? (
           <div className="text-center py-8 text-neutral-500">Loading...</div>
         ) : error ? (
           <div className="text-center py-8 text-error">{error}</div>
         ) : (
-          <main className="w-full max-w-5xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-            {products.map((product) => {
-              const images = product.images ?? [];
-              return (
-                <Link key={product.id} href={`/product/${product.id}`} className="bg-white rounded-lg shadow-md p-4 flex flex-col items-center hover:shadow-lg transition-all duration-300 border border-neutral-200 hover:border-accent/20">
-                  <div className="w-full h-64 relative mb-4 flex flex-col items-center">
-                    {images.length > 0 && (
-                      <>
-                        <Image
-                          src={images[carouselIndexes[product.id] || 0]}
-                          alt={product.name}
-                          fill
-                          className="object-cover rounded-md"
-                          sizes="(max-width: 768px) 100vw, 33vw"
-                          priority
-                        />
-                        {images.length > 1 && (
-                          <div className="absolute bottom-2 left-0 right-0 flex justify-between px-2 z-10">
-                            <button
-                              type="button"
-                              className="bg-white/90 rounded-full px-2 py-1 text-neutral-700 hover:bg-accent hover:text-white transition-colors"
-                              onClick={e => { e.preventDefault(); handlePrev(product.id, images); }}
-                            >
-                              &#8592;
-                            </button>
-                            <button
-                              type="button"
-                              className="bg-white/90 rounded-full px-2 py-1 text-neutral-700 hover:bg-accent hover:text-white transition-colors"
-                              onClick={e => { e.preventDefault(); handleNext(product.id, images); }}
-                            >
-                              &#8594;
-                            </button>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  <h2 className="text-xl font-semibold text-primary mb-1 text-center">{product.name}</h2>
-                  <span className="text-accent font-bold text-lg">{product.price}</span>
-                </Link>
-              );
-            })}
-          </main>
+          <div className="relative w-full max-w-5xl">
+            {/* Catalog grid */}
+            <main className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              {products.map((product) => {
+                const images = product.images ?? [];
+                const priceNumber = Number((product.price || "").replace(/[^0-9.,-]/g, '').replace(/\./g, '').replace(/,/g, '.'));
+                const formattedPrice = isNaN(priceNumber)
+                  ? product.price
+                  : new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(priceNumber);
+                return (
+                  <Link key={product.id} href={`/product/${product.id}`} className="bg-white rounded-lg shadow-sm p-0 flex flex-col items-stretch hover:shadow transition-all duration-300 border border-neutral-200 hover:border-accent/20">
+                    <div className="w-full h-64 relative mb-0 flex flex-col items-center">
+                      {images.length > 0 && (
+                        <>
+                          <Image
+                            src={images[carouselIndexes[product.id] || 0]}
+                            alt={product.name}
+                            fill
+                            className="object-cover rounded-md"
+                            sizes="(max-width: 768px) 100vw, 33vw"
+                            priority
+                          />
+                          {images.length > 1 && (
+                            <div className="absolute bottom-2 left-0 right-0 flex justify-between px-2 z-10">
+                              <button
+                                type="button"
+                                className="bg-white/90 rounded-full p-1 text-neutral-700 hover:bg-accent hover:text-white transition-colors"
+                                onClick={e => { e.preventDefault(); handlePrev(product.id, images); }}
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                                </svg>
+                              </button>
+                              <button
+                                type="button"
+                                className="bg-white/90 rounded-full p-1 text-neutral-700 hover:bg-accent hover:text-white transition-colors"
+                                onClick={e => { e.preventDefault(); handleNext(product.id, images); }}
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                                </svg>
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    <div className="px-4 py-3">
+                      <h2 className="text-xl font-semibold text-primary mb-1 text-left">{product.name}</h2>
+                      <span className="text-primary font-semibold text-lg text-left block">{formattedPrice}</span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </main>
+          </div>
         )}
       </div>
+
+      {/* About Section */}
+      <section id="about" className="bg-cream border-t border-neutral-200 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="flex justify-center lg:justify-end">
+            <div className="relative">
+              <Image
+                src="/ROPERO_DE_LAU_big.jpg"
+                alt="El Ropero De Lau"
+                width={500}
+                height={200}
+                className="h-80 w-auto object-contain shadow-sm rounded-xl"
+                priority
+              />
+            </div>
+          </div>
+          <div className="text-left max-w-lg">
+            <h2 className="text-3xl font-bold text-primary mb-6">Sobre Nosotros</h2>
+            <div className="text-xl leading-relaxed space-y-6" style={{ color: '#462d00' }}>
+              <p>
+                En El Ropero de Lau creemos que cada prenda tiene mucho que contar. Todas nuestras piezas vienen del armario de una sola mujer y están en excelente estado, listas para vivir nuevas aventuras contigo.
+              </p>
+              <p>
+                Al darles una segunda vida, ayudamos juntos a cuidar el planeta y apoyar la economía circular. Aquí encontrarás moda bonita, accesible y con historia, para que te sientas bien por dentro y por fuera.
+              </p>
+            </div>
+            <Link href="/" className="inline-block mt-8 text-accent hover:text-accent-dark underline font-medium transition-colors text-lg">
+              Volver al catálogo
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {/* Footer */}
       <footer className="bg-white border-t border-neutral-200 py-12">

@@ -19,7 +19,7 @@ export default function SobreNosotrosPage() {
           <div className="flex items-center justify-between h-16">
             {/* Logo Text */}
             <Link href="/" className="flex items-center">
-              <h1 className="text-xl font-bold text-primary">Bienvenidos al ropero de Lau</h1>
+              <Image src="/ROPERO_DE_LAU_mid.jpg" alt="El Ropero De Lau" width={120} height={40} className="h-10 w-auto object-contain" />
             </Link>
 
             {/* Navigation */}
@@ -65,7 +65,7 @@ export default function SobreNosotrosPage() {
           {/* Content Section - Half Page */}
           <div className="text-left max-w-lg">
             <h1 className="text-4xl font-bold text-primary mb-8">Sobre Nosotros</h1>
-            <div className="text-xl text-secondary leading-relaxed space-y-6">
+            <div className="text-xl leading-relaxed space-y-6" style={{ color: '#462d00' }}>
               <p>
                 En El Ropero de Lau creemos que cada prenda tiene mucho que contar. Todas nuestras piezas vienen del armario de una sola mujer y están en excelente estado, listas para vivir nuevas aventuras contigo.
               </p>
