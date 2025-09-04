@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { supabase } from '@/utils/supabaseClient';
 import Link from "next/link";
+import { useCart } from "@/contexts/CartContext";
 
 interface Product {
   id: string;
@@ -11,15 +12,19 @@ interface Product {
   image: string;
   created_at?: string;
   images?: string[]; // Added images array
+  status?: string; // Optional status for visibility control
 }
 
 export default function Home() {
+  const { state, dispatch } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [year, setYear] = useState("");
   // Track current image index for each product
   const [carouselIndexes, setCarouselIndexes] = useState<{ [id: string]: number }>({});
+  const [reservingId, setReservingId] = useState<string | null>(null);
+  const [reservedIds, setReservedIds] = useState<Set<string>>(new Set());
 
   const handlePrev = (id: string, images: string[]) => {
     setCarouselIndexes((prev) => ({
@@ -48,10 +53,33 @@ export default function Home() {
         setProducts([]);
       } else {
         setError("");
-        setProducts(data as Product[]);
+        // If status field exists, hide items explicitly marked as sold; otherwise show all
+        const allProducts = (data || []) as Product[];
+        const nowIso = new Date().toISOString();
+        const visibleProducts = allProducts.filter(p => {
+          if (!p.status || p.status === 'available') return true;
+          if (p.status === 'reserved') {
+            // If reservation expired, consider visible
+            // @ts-ignore allow optional field
+            return p.reservation_expires_at && p.reservation_expires_at < nowIso;
+          }
+          return false;
+        });
+        setProducts(visibleProducts);
       }
     };
     fetchProducts();
+
+    // Refresh catalog when cart changes (e.g., unreserve on remove)
+    const onCartUpdated = () => fetchProducts();
+    if (typeof window !== 'undefined') {
+      window.addEventListener('cart-updated', onCartUpdated);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('cart-updated', onCartUpdated);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -79,8 +107,8 @@ export default function Home() {
               <Link href="/#about" className="text-primary hover:text-accent font-medium text-sm uppercase tracking-wide transition-colors">
                 Sobre Nosotros
               </Link>
-              <Link href="#" className="text-primary hover:text-accent font-medium text-sm uppercase tracking-wide transition-colors">
-                Carrito (0)
+              <Link href="/carrito" className="text-primary hover:text-accent font-medium text-sm uppercase tracking-wide transition-colors">
+                Carrito ({state.totalItems})
               </Link>
             </nav>
 
@@ -114,8 +142,9 @@ export default function Home() {
                 const formattedPrice = isNaN(priceNumber)
                   ? product.price
                   : new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(priceNumber);
+                const isAdded = reservedIds.has(product.id) || state.items.some(i => i.id === product.id);
                 return (
-                  <Link key={product.id} href={`/product/${product.id}`} className="bg-white rounded-lg shadow-sm p-0 flex flex-col items-stretch hover:shadow transition-all duration-300 border border-neutral-200 hover:border-accent/20">
+                  <div key={product.id} className="bg-white rounded-lg shadow-sm p-0 flex flex-col items-stretch hover:shadow transition-all duration-300 border border-neutral-200 hover:border-accent/20">
                     <div className="w-full h-64 relative mb-0 flex flex-col items-center">
                       {images.length > 0 && (
                         <>
@@ -153,10 +182,59 @@ export default function Home() {
                       )}
                     </div>
                     <div className="px-4 py-3">
-                      <h2 className="text-xl font-semibold text-primary mb-1 text-left">{product.name}</h2>
-                      <span className="text-primary font-semibold text-lg text-left block">{formattedPrice}</span>
+                      <h2 className="text-xl font-semibold text-primary mb-1 text-left">
+                        <Link href={`/product/${product.id}`} className="hover:underline">
+                          {product.name}
+                        </Link>
+                      </h2>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-primary font-semibold text-lg text-left block">{formattedPrice}</span>
+                        <button
+                          type="button"
+                          className="bg-accent hover:bg-accent-dark text-white text-sm px-2 py-2 rounded disabled:opacity-50 flex items-center justify-center"
+                          disabled={product.status === 'reserved' || product.status === 'sold' || isAdded || reservingId === product.id}
+                          onClick={async () => {
+                            try {
+                              setReservingId(product.id);
+                              const res = await fetch('/api/products/reserve', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ id: product.id }),
+                              });
+                              const data = await res.json();
+                              if (!res.ok) {
+                                alert(data.error || 'Este producto ya no está disponible');
+                                return;
+                              }
+                              dispatch({
+                                type: 'ADD_ITEM',
+                                payload: {
+                                  id: product.id,
+                                  name: product.name,
+                                  price: product.price,
+                                  image: product.images?.[0] || product.image,
+                                }
+                              });
+                              setReservedIds(prev => new Set(prev).add(product.id));
+                            } catch (e) {
+                              console.error(e);
+                              alert('No se pudo agregar al carrito');
+                            } finally {
+                              setReservingId(null);
+                            }
+                          }}
+                        >
+                          {reservingId === product.id ? (
+                            <span className="animate-pulse">···</span>
+                          ) : isAdded ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M9 21a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm8 0a1 1 0 1 1 .001-2.001A1 1 0 0 1 17 21zM7.338 5l1.2 6h7.923l1.237-5.237A1 1 0 0 0 16.726 4H8.338l-.2-1H5V2h3.338a1 1 0 0 1 .98.804L9.62 5h7.106a2 2 0 0 1 1.958 2.412L17.2 13.763A2 2 0 0 1 15.238 15H9a2 2 0 0 1-1.976-1.638L5.338 5h2z"/></svg>
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4h10l1 5H8l-1-5zm0 7h11a1 1 0 0 1 .98 1.196l-1 5A2 2 0 0 1 16.02 18H9a2 2 0 0 1-1.961-1.607L6 11zm2 10a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm8 0a1 1 0 1 1 .001-2.001A1 1 0 0 1 17 21z"/></svg>
+                          )}
+                        </button>
+                      </div>
                     </div>
-                  </Link>
+                  </div>
                 );
               })}
             </main>

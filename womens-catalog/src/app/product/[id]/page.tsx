@@ -5,6 +5,7 @@ import { supabase } from '@/utils/supabaseClient';
 import Image from "next/image";
 import Link from "next/link";
 import { Fragment } from "react";
+import { useCart } from "@/contexts/CartContext";
 
 interface Product {
   id: string;
@@ -17,6 +18,7 @@ interface Product {
 
 export default function ProductDetails() {
   const { id } = useParams();
+  const { state, dispatch } = useCart();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -27,6 +29,7 @@ export default function ProductDetails() {
   const [aiError, setAiError] = useState("");
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [year, setYear] = useState("");
+  const [addedToCart, setAddedToCart] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -75,7 +78,7 @@ export default function ProductDetails() {
                   Sobre Nosotros
                 </Link>
                 <Link href="#" className="text-primary hover:text-accent font-medium text-sm uppercase tracking-wide transition-colors">
-                  Carrito (0)
+                  Carrito ({state.totalItems})
                 </Link>
               </nav>
             </div>
@@ -131,7 +134,7 @@ export default function ProductDetails() {
                   Sobre Nosotros
                 </Link>
                 <Link href="#" className="text-primary hover:text-accent font-medium text-sm uppercase tracking-wide transition-colors">
-                  Carrito (0)
+                  Carrito ({state.totalItems})
                 </Link>
               </nav>
             </div>
@@ -202,7 +205,7 @@ export default function ProductDetails() {
                 Sobre Nosotros
               </Link>
               <Link href="#" className="text-primary hover:text-accent font-medium text-sm uppercase tracking-wide transition-colors">
-                Carrito (0)
+                Carrito ({state.totalItems})
               </Link>
             </nav>
 
@@ -280,6 +283,55 @@ export default function ProductDetails() {
             })()}
           </span>
           {formattedDate && <div className="text-neutral-400 text-sm mb-4">Agregado: {formattedDate}</div>}
+          
+          {/* Add to Cart Section */}
+          <div className="w-full mb-6">
+            <button
+              onClick={() => {
+                (async () => {
+                  if (!product) return;
+                  try {
+                    const res = await fetch('/api/products/reserve', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ id: product.id }),
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                      alert(data.error || 'Este producto ya no está disponible');
+                      return;
+                    }
+                    dispatch({
+                      type: 'ADD_ITEM',
+                      payload: {
+                        id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        image: product.images?.[0] || product.image,
+                        size: (product as any).size || undefined,
+                      }
+                    });
+                    setAddedToCart(true);
+                    setTimeout(() => setAddedToCart(false), 2000);
+                  } catch (e) {
+                    console.error(e);
+                    alert('No se pudo agregar al carrito');
+                  }
+                })();
+              }}
+              className="w-full bg-accent hover:bg-accent-dark text-white py-3 px-6 rounded-lg font-semibold transition-all duration-300 hover:shadow-md disabled:opacity-50"
+            >
+              {addedToCart ? "✓ Agregado al carrito" : "Agregar al carrito"}
+            </button>
+            {addedToCart && (
+              <div className="mt-2 text-center">
+                <Link href="/carrito" className="text-accent underline text-sm">
+                  Ver carrito
+                </Link>
+              </div>
+            )}
+          </div>
+          
           <Link href="/" className="mt-4 text-accent underline">Volver al catálogo</Link>
           {/* AI Outfit Suggestion Section */}
           <button

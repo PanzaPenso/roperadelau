@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from '@/utils/supabaseClient';
 import Image from "next/image";
+import Link from "next/link";
 
 interface Product {
   id: string;
@@ -10,6 +11,28 @@ interface Product {
   size: string;
   images: string[];
   created_at?: string;
+  status?: string;
+}
+
+interface Order {
+  id: string;
+  order_number: string;
+  customer_name: string;
+  customer_email: string;
+  customer_mobile: string;
+  customer_address: string;
+  customer_city: string;
+  customer_country: string;
+  customer_postal_code?: string;
+  items: any[];
+  total_items: number;
+  total_price: number;
+  status: string;
+  payment_status: string;
+  shipping_status: string;
+  admin_notes?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 const ADMIN_PASSWORD = "AdminRopero2025!*"; // Updated admin password
@@ -17,6 +40,7 @@ const BUCKET = "product-images"; // Make sure this bucket exists in Supabase Sto
 
 export default function AdminPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [form, setForm] = useState({ name: "", price: "$", size: "", images: [] as string[] });
   const [editId, setEditId] = useState<string | null>(null);
   const [authenticated, setAuthenticated] = useState(false);
@@ -25,6 +49,8 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products');
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch products from Supabase
@@ -43,6 +69,22 @@ export default function AdminPage() {
     return data as Product[];
   };
 
+  // Fetch orders from Supabase
+  const fetchOrders = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('orders')
+      .select('*')
+      .order('created_at', { ascending: false });
+    setLoading(false);
+    if (error) {
+      setError("Failed to fetch orders");
+      return [];
+    }
+    setError("");
+    return data as Order[];
+  };
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const isAuth = localStorage.getItem("admin-auth") === "true";
@@ -50,7 +92,9 @@ export default function AdminPage() {
     }
     const load = async () => {
       const products = await fetchProducts();
+      const orders = await fetchOrders();
       setProducts(products);
+      setOrders(orders);
     };
     load();
   }, []);
@@ -167,6 +211,54 @@ export default function AdminPage() {
     setProducts(products);
   };
 
+  // Order management functions
+  const handleOrderStatusUpdate = async (orderId: string, newStatus: string) => {
+    setLoading(true);
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: newStatus })
+      .eq('id', orderId);
+    
+    if (!error) {
+      // If marking as incomplete, restore product visibility
+      if (newStatus === 'cancelled') {
+        const order = orders.find(o => o.id === orderId);
+        if (order) {
+          const productIds = order.items.map((item: any) => item.id);
+          await supabase
+            .from('products')
+            .update({ status: 'available' })
+            .in('id', productIds);
+        }
+      }
+      
+      const orders = await fetchOrders();
+      setOrders(orders);
+    } else {
+      setError("Failed to update order status");
+    }
+    setLoading(false);
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('es-AR', { 
+      style: 'currency', 
+      currency: 'ARS', 
+      maximumFractionDigits: 0 
+    }).format(price);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'paid': return 'bg-blue-100 text-blue-800';
+      case 'shipped': return 'bg-purple-100 text-purple-800';
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   if (!authenticated) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-cream font-sans px-4 py-8">
@@ -223,12 +315,40 @@ export default function AdminPage() {
           className="mx-auto h-16 w-auto object-contain mb-4"
         />
         <h1 className="text-3xl font-bold mb-2 text-primary">Admin Dashboard</h1>
-        <p className="text-secondary">Gestiona los productos de El Ropero De Lau</p>
+        <p className="text-secondary">Gestiona los productos y órdenes de El Ropero De Lau</p>
       </div>
-      <form
-        onSubmit={editId === null ? handleAdd : handleUpdate}
-        className="w-full max-w-md bg-white rounded-lg shadow-lg p-6 mb-8 border border-neutral-200"
-      >
+
+      {/* Tab Navigation */}
+      <div className="flex justify-center mb-8">
+        <div className="bg-white rounded-lg shadow-sm border border-neutral-200 p-1">
+          <button
+            onClick={() => setActiveTab('products')}
+            className={`px-6 py-2 rounded-md font-medium transition-colors ${
+              activeTab === 'products'
+                ? 'bg-accent text-white'
+                : 'text-neutral-600 hover:text-primary'
+            }`}
+          >
+            Productos
+          </button>
+          <button
+            onClick={() => setActiveTab('orders')}
+            className={`px-6 py-2 rounded-md font-medium transition-colors ${
+              activeTab === 'orders'
+                ? 'bg-accent text-white'
+                : 'text-neutral-600 hover:text-primary'
+            }`}
+          >
+            Órdenes ({orders.length})
+          </button>
+        </div>
+      </div>
+      {activeTab === 'products' && (
+        <>
+          <form
+            onSubmit={editId === null ? handleAdd : handleUpdate}
+            className="w-full max-w-md bg-white rounded-lg shadow-lg p-6 mb-8 border border-neutral-200"
+          >
         <h2 className="text-xl font-semibold mb-4 text-primary">
           {editId === null ? "Add New Product" : "Edit Product"}
         </h2>
@@ -368,6 +488,134 @@ export default function AdminPage() {
           </table>
         )}
       </div>
+        </>
+      )}
+
+      {activeTab === 'orders' && (
+        <div className="w-full max-w-6xl">
+          {loading ? (
+            <div className="text-center py-8 text-neutral-500">Cargando órdenes...</div>
+          ) : orders.length === 0 ? (
+            <div className="text-center py-8 text-neutral-500">No hay órdenes</div>
+          ) : (
+            <div className="space-y-4">
+              {orders.map((order) => (
+                <div key={order.id} className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-primary">Orden #{order.order_number}</h3>
+                      <p className="text-sm text-neutral-600">
+                        {new Date(order.created_at).toLocaleDateString('es-AR')} - {order.customer_name}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                        {order.status}
+                      </span>
+                      <button
+                        onClick={() => setSelectedOrder(selectedOrder?.id === order.id ? null : order)}
+                        className="text-accent hover:text-accent-dark text-sm font-medium"
+                      >
+                        {selectedOrder?.id === order.id ? 'Ocultar' : 'Ver detalles'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                      <p className="text-sm text-neutral-600">Total</p>
+                      <p className="font-semibold text-accent">{formatPrice(order.total_price)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-neutral-600">Artículos</p>
+                      <p className="font-semibold">{order.total_items}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-neutral-600">Email</p>
+                      <p className="font-semibold text-sm">{order.customer_email}</p>
+                    </div>
+                  </div>
+
+                  {selectedOrder?.id === order.id && (
+                    <div className="border-t border-neutral-200 pt-4">
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div>
+                          <h4 className="font-semibold text-primary mb-3">Información del Cliente</h4>
+                          <div className="space-y-2 text-sm">
+                            <p><strong>Nombre:</strong> {order.customer_name}</p>
+                            <p><strong>Email:</strong> {order.customer_email}</p>
+                            <p><strong>Teléfono:</strong> {order.customer_mobile}</p>
+                            <p><strong>Dirección:</strong> {order.customer_address}</p>
+                            <p><strong>Ciudad:</strong> {order.customer_city}</p>
+                            <p><strong>País:</strong> {order.customer_country}</p>
+                            {order.customer_postal_code && (
+                              <p><strong>Código Postal:</strong> {order.customer_postal_code}</p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="font-semibold text-primary mb-3">Artículos</h4>
+                          <div className="space-y-3">
+                            {order.items.map((item: any, index: number) => (
+                              <div key={index} className="flex items-center space-x-3 p-3 bg-neutral-50 rounded">
+                                <img
+                                  src={item.image}
+                                  alt={item.name}
+                                  className="w-12 h-12 object-cover rounded"
+                                />
+                                <div className="flex-1">
+                                  <p className="font-medium text-sm">{item.name}</p>
+                                  {item.size && <p className="text-xs text-neutral-600">Talla: {item.size}</p>}
+                                  <p className="text-xs text-neutral-600">Cantidad: {item.quantity}</p>
+                                </div>
+                                <p className="text-sm font-semibold text-accent">
+                                  {formatPrice(Number((item.price || "").replace(/[^0-9.,-]/g, '').replace(/\./g, '').replace(/,/g, '.')) * item.quantity)}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-6 flex flex-wrap gap-2">
+                        <button
+                          onClick={() => handleOrderStatusUpdate(order.id, 'paid')}
+                          disabled={loading || order.status === 'paid'}
+                          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Marcar como Pagado
+                        </button>
+                        <button
+                          onClick={() => handleOrderStatusUpdate(order.id, 'shipped')}
+                          disabled={loading || order.status === 'shipped'}
+                          className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Marcar como Enviado
+                        </button>
+                        <button
+                          onClick={() => handleOrderStatusUpdate(order.id, 'completed')}
+                          disabled={loading || order.status === 'completed'}
+                          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Marcar como Completado
+                        </button>
+                        <button
+                          onClick={() => handleOrderStatusUpdate(order.id, 'cancelled')}
+                          disabled={loading || order.status === 'cancelled'}
+                          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Cancelar Orden
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
-} 
+}
