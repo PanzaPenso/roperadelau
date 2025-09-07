@@ -233,9 +233,9 @@ export default function AdminPage() {
     if (!error) {
       // If marking as incomplete, restore product visibility
       if (newStatus === 'cancelled') {
-        const order = orders.find(o => o.id === orderId);
-        if (order) {
-          const productIds = order.items.map((item) => item.id);
+        const currentOrder = orders.find(o => o.id === orderId);
+        if (currentOrder) {
+          const productIds = currentOrder.items.map((item) => item.id);
           await supabase
             .from('products')
             .update({ status: 'available' })
@@ -243,8 +243,8 @@ export default function AdminPage() {
         }
       }
       
-      const orders = await fetchOrders();
-      setOrders(orders);
+      const updatedOrders = await fetchOrders();
+      setOrders(updatedOrders);
     } else {
       setError("Failed to update order status");
     }
