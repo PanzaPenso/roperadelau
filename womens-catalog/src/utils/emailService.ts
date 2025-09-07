@@ -1,3 +1,7 @@
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 interface OrderItem {
   id: string;
   name: string;
@@ -134,13 +138,24 @@ async function sendCustomerEmail(
     </html>
   `;
 
-  // For now, we'll use a simple email service
-  // In production, you would integrate with SendGrid, Resend, or similar
-  console.log('Customer email would be sent:', {
-    to: customerInfo.email,
-    subject: `Confirmación de Pedido #${orderData.order_number} - El Ropero De Lau`,
-    html: emailHtml
-  });
+  try {
+    const result = await resend.emails.send({
+      from: 'El Ropero De Lau <noreply@roperodelau.com>',
+      to: [customerInfo.email],
+      subject: `Confirmación de Pedido #${orderData.order_number} - El Ropero De Lau`,
+      html: emailHtml,
+    });
+    
+    console.log('Customer email sent successfully:', result.data?.id);
+  } catch (error) {
+    console.error('Error sending customer email:', error);
+    // Fallback to console log if email fails
+    console.log('Customer email would be sent:', {
+      to: customerInfo.email,
+      subject: `Confirmación de Pedido #${orderData.order_number} - El Ropero De Lau`,
+      html: emailHtml
+    });
+  }
 }
 
 async function sendAdminEmail(
@@ -237,11 +252,22 @@ async function sendAdminEmail(
     </html>
   `;
 
-  // For now, we'll use a simple email service
-  // In production, you would integrate with SendGrid, Resend, or similar
-  console.log('Admin email would be sent:', {
-    to: process.env.ADMIN_EMAIL || 'admin@roperodelau.com',
-    subject: `Nueva Orden #${orderData.order_number} - ${customerInfo.fullName}`,
-    html: emailHtml
-  });
+  try {
+    const result = await resend.emails.send({
+      from: 'El Ropero De Lau <noreply@roperodelau.com>',
+      to: [process.env.ADMIN_EMAIL || 'admin@roperodelau.com'],
+      subject: `Nueva Orden #${orderData.order_number} - ${customerInfo.fullName}`,
+      html: emailHtml,
+    });
+    
+    console.log('Admin email sent successfully:', result.data?.id);
+  } catch (error) {
+    console.error('Error sending admin email:', error);
+    // Fallback to console log if email fails
+    console.log('Admin email would be sent:', {
+      to: process.env.ADMIN_EMAIL || 'admin@roperodelau.com',
+      subject: `Nueva Orden #${orderData.order_number} - ${customerInfo.fullName}`,
+      html: emailHtml
+    });
+  }
 }
