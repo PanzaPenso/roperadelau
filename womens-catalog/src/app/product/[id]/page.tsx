@@ -14,6 +14,7 @@ interface Product {
   image: string;
   created_at?: string;
   images?: string[]; // Added images to the interface
+  size?: string; // Added size field
 }
 
 export default function ProductDetails() {
@@ -308,7 +309,7 @@ export default function ProductDetails() {
                         name: product.name,
                         price: product.price,
                         image: product.images?.[0] || product.image,
-                        size: (product as any).size || undefined,
+                        size: product.size || undefined,
                       }
                     });
                     setAddedToCart(true);

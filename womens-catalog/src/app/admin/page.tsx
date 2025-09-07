@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from '@/utils/supabaseClient';
 import Image from "next/image";
-import Link from "next/link";
 
 interface Product {
   id: string;
@@ -24,7 +23,14 @@ interface Order {
   customer_city: string;
   customer_country: string;
   customer_postal_code?: string;
-  items: any[];
+  items: Array<{
+    id: string;
+    name: string;
+    price: string;
+    image: string;
+    size?: string;
+    quantity: number;
+  }>;
   total_items: number;
   total_price: number;
   status: string;
@@ -78,11 +84,16 @@ export default function AdminPage() {
       .order('created_at', { ascending: false });
     setLoading(false);
     if (error) {
+      console.error('Orders fetch error:', error);
+      // Don't set error for missing table, just return empty array
+      if (error.code === 'PGRST116' || error.message.includes('relation "orders" does not exist')) {
+        return [];
+      }
       setError("Failed to fetch orders");
       return [];
     }
     setError("");
-    return data as Order[];
+    return (data || []) as Order[];
   };
 
   useEffect(() => {
@@ -224,7 +235,7 @@ export default function AdminPage() {
       if (newStatus === 'cancelled') {
         const order = orders.find(o => o.id === orderId);
         if (order) {
-          const productIds = order.items.map((item: any) => item.id);
+          const productIds = order.items.map((item) => item.id);
           await supabase
             .from('products')
             .update({ status: 'available' })
@@ -496,7 +507,12 @@ export default function AdminPage() {
           {loading ? (
             <div className="text-center py-8 text-neutral-500">Cargando órdenes...</div>
           ) : orders.length === 0 ? (
-            <div className="text-center py-8 text-neutral-500">No hay órdenes</div>
+            <div className="text-center py-8">
+              <div className="text-neutral-500 mb-4">No hay órdenes aún</div>
+              <div className="text-sm text-neutral-400">
+                Las órdenes aparecerán aquí cuando los clientes realicen compras
+              </div>
+            </div>
           ) : (
             <div className="space-y-4">
               {orders.map((order) => (
@@ -557,11 +573,13 @@ export default function AdminPage() {
                         <div>
                           <h4 className="font-semibold text-primary mb-3">Artículos</h4>
                           <div className="space-y-3">
-                            {order.items.map((item: any, index: number) => (
+                            {order.items.map((item, index: number) => (
                               <div key={index} className="flex items-center space-x-3 p-3 bg-neutral-50 rounded">
-                                <img
+                                <Image
                                   src={item.image}
                                   alt={item.name}
+                                  width={48}
+                                  height={48}
                                   className="w-12 h-12 object-cover rounded"
                                 />
                                 <div className="flex-1">

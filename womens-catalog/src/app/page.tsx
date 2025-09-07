@@ -60,7 +60,7 @@ export default function Home() {
           if (!p.status || p.status === 'available') return true;
           if (p.status === 'reserved') {
             // If reservation expired, consider visible
-            // @ts-ignore allow optional field
+            // @ts-expect-error allow optional field
             return p.reservation_expires_at && p.reservation_expires_at < nowIso;
           }
           return false;
