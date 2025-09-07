@@ -139,14 +139,20 @@ async function sendCustomerEmail(
   `;
 
   try {
+    console.log('Attempting to send customer email to:', customerInfo.email);
+    console.log('Order number:', orderData.order_number);
+    
     const result = await resend.emails.send({
-      from: 'El Ropero De Lau <noreply@roperodelau.com>',
+      from: 'El Ropero De Lau <onboarding@resend.dev>',
       to: [customerInfo.email],
       subject: `Confirmación de Pedido #${orderData.order_number} - El Ropero De Lau`,
       html: emailHtml,
     });
     
-    console.log('Customer email sent successfully:', result.data?.id);
+    console.log('Customer email sent successfully:', result);
+    if (result.error) {
+      console.error('Customer email error:', result.error);
+    }
   } catch (error) {
     console.error('Error sending customer email:', error);
     // Fallback to console log if email fails
@@ -254,7 +260,7 @@ async function sendAdminEmail(
 
   try {
     const result = await resend.emails.send({
-      from: 'El Ropero De Lau <noreply@roperodelau.com>',
+      from: 'El Ropero De Lau <onboarding@resend.dev>',
       to: [process.env.ADMIN_EMAIL || 'admin@roperodelau.com'],
       subject: `Nueva Orden #${orderData.order_number} - ${customerInfo.fullName}`,
       html: emailHtml,
